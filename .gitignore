@@ -1,0 +1,8 @@
+.env
+constans.py
+.venv/
+__pycache__/
+*.pyc
+database.db
+downloads
+cache
