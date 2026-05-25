@@ -7,7 +7,8 @@ from filters.admin_filter import AdminFilter
 from database.db import (
     get_total_users,
     get_total_downloads,
-    get_all_users
+    get_all_users,
+    give_premium
 )
 import psutil
 
@@ -96,4 +97,28 @@ async def system_info(message: Message):
         f"🖥 SYSTEM INFO\n\n"
         f"CPU: {cpu}%\n"
         f"RAM: {ram}%"
+    )
+
+
+
+@router.message(Command("givepremium"))
+async def givepremium(message: Message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer(
+            "Usage:\n/givepremium USER_ID"
+        )
+        return
+
+    user_id = int(parts[1])
+
+    give_premium(user_id)
+
+    await message.answer(
+        "✅ Premium added"
     )

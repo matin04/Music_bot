@@ -11,3 +11,7 @@ class UserStates(StatesGroup):
     choosing_media = State()
 
     processing = State()
+
+class UserStates(StatesGroup):
+
+    chatting = State()

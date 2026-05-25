@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime, timedelta
 DB_NAME = "database/database.db"
 
 conn = sqlite3.connect("database/database.db")
@@ -22,7 +23,7 @@ def create_tables():
         song_name TEXT
     )
     """)
-
+    create_premium_table()
     conn.commit()
 
 def add_user(telegram_id):
@@ -133,3 +134,75 @@ def get_all_users():
     conn.close()
 
     return [u[0] for u in users]
+
+
+def create_premium_table():
+
+    conn = sqlite3.connect(DB_NAME)
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS premium_users (
+            user_id INTEGER PRIMARY KEY,
+            expires_at TEXT
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def is_premium(user_id):
+
+    conn = sqlite3.connect(DB_NAME)
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT expires_at
+        FROM premium_users
+        WHERE user_id = ?
+        """,
+        (user_id,)
+    )
+
+    result = cursor.fetchone()
+
+    conn.close()
+
+    if not result:
+        return False
+
+    expires_at = datetime.fromisoformat(
+        result[0]
+    )
+
+    return expires_at > datetime.now()
+
+
+def give_premium(user_id, days=30):
+
+    conn = sqlite3.connect(DB_NAME)
+
+    cursor = conn.cursor()
+
+    expires = (
+        datetime.now() +
+        timedelta(days=days)
+    ).isoformat()
+
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO
+        premium_users
+        (user_id, expires_at)
+
+        VALUES (?, ?)
+        """,
+        (user_id, expires)
+    )
+
+    conn.commit()
+    conn.close()

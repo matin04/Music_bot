@@ -23,7 +23,8 @@ from database.db import (
     get_total_downloads,
     save_user_link,
     get_user_link,
-    delete_user_link
+    delete_user_link,
+    is_premium
 )
 from database.queries import (
     create_tables,
@@ -59,6 +60,16 @@ from utils.redis_cache import (
 from utils.redis_rate_limit import (
     RedisRateLimiter
 )
+from handlers.ai import router as ai_router
+from middlewares.limits import (
+    can_download,
+    add_download
+)
+from handlers.premium import (
+    router as premium_router
+)
+
+
 
 rate_limiter = RedisRateLimiter()
 
@@ -82,6 +93,10 @@ dp.update.middleware(
 )
 dp.update.middleware(
     RateLimitMiddleware()
+)
+dp.include_router(ai_router)
+dp.include_router(
+    premium_router
 )
 rate_limiter = RateLimiter(cooldown_seconds=4)
 task_queue = TaskQueue()
@@ -216,6 +231,23 @@ async def send_video(callback: CallbackQuery, state: FSMContext):
 
     url = data.get("url")
 
+    if not is_premium(callback.from_user.id):
+
+        if not can_download(
+            callback.from_user.id
+        ):
+    
+            await callback.message.answer(
+                "🚫 Free лимит тамом шуд.\n"
+                "⭐ Premium гир!"
+            )
+    
+            return
+    
+        add_download(
+            callback.from_user.id
+        )
+
     if not url:
         await callback.message.answer("❌ Ссылка ёфт нашуд.")
         return
@@ -270,6 +302,24 @@ async def send_mp3(callback: CallbackQuery, state: FSMContext):
         callback.from_user.id
     )
 # cached_song 
+
+    if not is_premium(callback.from_user.id):
+
+        if not can_download(
+            callback.from_user.id
+        ):
+
+            await callback.message.answer(
+                "🚫 Free лимит тамом шуд.\n"
+                "⭐ Premium гир!"
+            )
+
+            return
+
+        add_download(
+            callback.from_user.id
+        )
+
     if not url:
         await callback.message.answer("❌ Ссылка ёфт нашуд.")
         return
@@ -356,6 +406,23 @@ async def send_full_song(callback: CallbackQuery, state: FSMContext):
     url = get_user_link(
         callback.from_user.id
     )
+
+    if not is_premium(callback.from_user.id):
+
+        if not can_download(
+            callback.from_user.id
+        ):
+    
+            await callback.message.answer(
+                "🚫 Free лимит тамом шуд.\n"
+                "⭐ Premium гир!"
+            )
+    
+            return
+    
+        add_download(
+            callback.from_user.id
+        )
 
     # logger.info(
     #     f"Song sent successfully: {query}"
